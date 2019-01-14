@@ -132,9 +132,9 @@ int main(void)
   MX_USART1_UART_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
+  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&adc_buffer, 5);
   HAL_TIM_Base_Start_IT(&htim4);
 //  HAL_ADC_Start_IT(&hadc2);
-  HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&adc_buffer, 5);
 
   /* USER CODE END 2 */
 

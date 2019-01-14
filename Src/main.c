@@ -94,8 +94,7 @@ static void MX_TIM4_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 volatile uint16_t adc_buffer[5] = {0};
-volatile uint16_t tmp[5] = {777};
-
+volatile uint8_t data_ready = 0;
 /* USER CODE END 0 */
 
 /**
@@ -143,15 +142,15 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    //HAL_Delay(1000);
-
-
-    //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-
+    if (!data_ready) {
+      continue;
+    }
+    data_ready = 0;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-
+    GPIO_PinState current_state = HAL_GPIO_ReadPin(LD2_GPIO_Port, LD2_Pin);
+    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !current_state);
   }
   /* USER CODE END 3 */
 }
@@ -196,7 +195,7 @@ void SystemClock_Config(void)
                               |RCC_PERIPHCLK_ADC12|RCC_PERIPHCLK_TIM34;
   PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
   PeriphClkInit.Usart2ClockSelection = RCC_USART2CLKSOURCE_PCLK1;
-  PeriphClkInit.Adc12ClockSelection = RCC_ADC12PLLCLK_DIV256;
+  PeriphClkInit.Adc12ClockSelection = RCC_ADC12PLLCLK_DIV64;
   PeriphClkInit.Tim34ClockSelection = RCC_TIM34CLK_HCLK;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
   {
@@ -349,9 +348,9 @@ static void MX_TIM4_Init(void)
 
   /* USER CODE END TIM4_Init 1 */
   htim4.Instance = TIM4;
-  htim4.Init.Prescaler = 10800-1;
+  htim4.Init.Prescaler = 7200-1;
   htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim4.Init.Period = 10000-1;
+  htim4.Init.Period = 1000-1;
   htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
   if (HAL_TIM_Base_Init(&htim4) != HAL_OK)
@@ -509,9 +508,7 @@ static void MX_GPIO_Init(void)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
   /* Toggle LED */
   //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
-
-  GPIO_PinState current_state = HAL_GPIO_ReadPin(LD2_GPIO_Port, LD2_Pin);
-  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !current_state);
+  data_ready = 1;
 }
 
 //void HAL_ADC_ConvHalfCpltCallback(ADC_HandleTypeDef* hadc){

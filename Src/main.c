@@ -47,7 +47,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -101,6 +101,7 @@ volatile uint16_t adc_buffer[5] = {0};
 volatile uint8_t data_ready = 0;
 volatile uint16_t dac_value = 0;
 uint16_t adc_target = 2088; // 7.5V input voltage
+char uart_tx_buffer[100];
 /* USER CODE END 0 */
 
 /**
@@ -157,7 +158,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     GPIO_PinState current_state = HAL_GPIO_ReadPin(LD2_GPIO_Port, LD2_Pin);
-    HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !current_state);
+    //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !current_state);
 
     // Toggle DAC
     if (current_state == GPIO_PIN_RESET) {
@@ -165,6 +166,22 @@ int main(void)
     } else {
       HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0x0000);
     }
+
+    // Send measurement status over UART
+    uint32_t PV_mV = 0, BATT_mV = 0;
+    int32_t PV_mA = 0, BATT_mA = 0, LOAD_mA = 0;
+
+    int len = sprintf(uart_tx_buffer, "+MSR(%lu,%li,%lu,%li,%li)\n", PV_mV, PV_mA, BATT_mV, BATT_mA, LOAD_mA );
+    static uint8_t uart_tx_cnt = 0;
+    if (uart_tx_cnt == 5) {
+      if (HAL_UART_Transmit_IT(&huart2, (uint8_t*)uart_tx_buffer, len) != HAL_OK) {
+        Error_Handler();
+      }
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+    } else {
+      HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
+    }
+    uart_tx_cnt = (uart_tx_cnt + 1) % (5 + 1);
 
   }
   /* USER CODE END 3 */
@@ -452,7 +469,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 38400;
+  huart2.Init.BaudRate = 57600;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;

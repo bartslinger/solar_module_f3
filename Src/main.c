@@ -6,9 +6,13 @@
   ******************************************************************************
   ** This notice applies to any and all portions of this file
   * that are not between comment pairs USER CODE BEGIN and
-  * USER CODE END. Other portions of this file, whether 
+  * USER CODE END. Other portions of this file, whether
   * inserted by the user or by software development tools
   * are owned by their respective copyright owners.
+  *
+  * hallo
+  * stomme newlin
+  * nog een nieuwe???
   *
   * COPYRIGHT(c) 2019 STMicroelectronics
   *
@@ -95,6 +99,8 @@ static void MX_TIM4_Init(void);
 /* USER CODE BEGIN 0 */
 volatile uint16_t adc_buffer[5] = {0};
 volatile uint8_t data_ready = 0;
+volatile uint16_t dac_value = 0;
+uint16_t adc_target = 2088; // 7.5V input voltage
 /* USER CODE END 0 */
 
 /**
@@ -134,7 +140,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_ADC_Start_DMA(&hadc2, (uint32_t*)&adc_buffer, 5);
   HAL_TIM_Base_Start_IT(&htim4);
-//  HAL_ADC_Start_IT(&hadc2);
+
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
 
   /* USER CODE END 2 */
 
@@ -151,6 +158,14 @@ int main(void)
     /* USER CODE BEGIN 3 */
     GPIO_PinState current_state = HAL_GPIO_ReadPin(LD2_GPIO_Port, LD2_Pin);
     HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !current_state);
+
+    // Toggle DAC
+    if (current_state == GPIO_PIN_RESET) {
+      HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 869);
+    } else {
+      HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0x0000);
+    }
+
   }
   /* USER CODE END 3 */
 }

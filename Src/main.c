@@ -94,7 +94,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
-
+uint16_t set_OUT_mA(float mA);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -576,6 +576,21 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc){
 
 //  //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
 //}
+
+uint16_t set_OUT_mA(float mA)
+{
+  const float R1 = 680.0f;              // [kOhm]
+  const float R2 = 20.0f;               // [kOhm]
+  const float Vref = 3.3f;              // [V]
+  const float sensitivity = 100000.0f;  // [mA/V]
+
+  uint16_t adc = (uint16_t) ( (mA / sensitivity) * (R1 + R2) * 4096.0f) / (R2 * Vref);
+
+  if (adc >= 4095) {
+    adc = 4095;
+  }
+  return adc;
+}
 
 /* USER CODE END 4 */
 

@@ -48,6 +48,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
+
+#include "measurement.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -157,26 +159,48 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-    GPIO_PinState current_state = HAL_GPIO_ReadPin(LD2_GPIO_Port, LD2_Pin);
+    //GPIO_PinState current_state = HAL_GPIO_ReadPin(LD2_GPIO_Port, LD2_Pin);
     //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, !current_state);
 
     // Toggle DAC
+    /*
     if (current_state == GPIO_PIN_RESET) {
       HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 869);
     } else {
       HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0x0000);
     }
+    */
+
+    // Enable output of the boost converter
+    //HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 869);
 
     // Send measurement status over UART
     uint32_t PV_mV = 0, BATT_mV = 0;
     int32_t PV_mA = 0, BATT_mA = 0, LOAD_mA = 0;
 
-    int len = sprintf(uart_tx_buffer, "+MSR(%lu,%li,%lu,%li,%li)\n", PV_mV, PV_mA, BATT_mV, BATT_mA, LOAD_mA );
+    PV_mV = get_PV_mV(adc_buffer[0]);
+
+
+    int len = sprintf(uart_tx_buffer, "+MSR(%lu,%li,%lu,%li,%li) DAC %u\n", PV_mV, PV_mA, BATT_mV, BATT_mA, LOAD_mA, dac_value );
     static uint8_t uart_tx_cnt = 0;
     if (uart_tx_cnt == 5) {
-      if (HAL_UART_Transmit_IT(&huart2, (uint8_t*)uart_tx_buffer, len) != HAL_OK) {
+      if (HAL_UART_Transmit_IT(&huart1, (uint8_t*)uart_tx_buffer, len) != HAL_OK) {
         Error_Handler();
       }
+
+      if (PV_mV > 9000) {
+        dac_value += 1;
+      } else if (dac_value > 0) {
+        dac_value -= 1;
+      }
+
+      if (dac_value > 4000) {
+        dac_value = 4000;
+      }
+
+      HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, dac_value);
+
+
       HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
     } else {
       HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
@@ -434,7 +458,7 @@ static void MX_USART1_UART_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   huart1.Instance = USART1;
-  huart1.Init.BaudRate = 38400;
+  huart1.Init.BaudRate = 57600;
   huart1.Init.WordLength = UART_WORDLENGTH_8B;
   huart1.Init.StopBits = UART_STOPBITS_1;
   huart1.Init.Parity = UART_PARITY_NONE;
